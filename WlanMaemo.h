@@ -22,6 +22,7 @@
 
 #include <dbus/dbus.h>
 #include <iostream>
+#include <list>
 
 class WlanMaemo
 {
@@ -29,68 +30,81 @@ private:
   DBusConnection* GetDBusConnection();
 
 public:
+  enum Type {
+    typeNone,            //! Not connected
+    typeAuto,            //! Automatic
+    typeAdHoc,           //! Ad hoc network between individual cells
+    typeInfrastructure,  //! Multi cell network
+    typeMaster,          //! Synchronisation master or AP
+    typeRepeater,        //! Repeater
+    typeSecond,          //! Second master/ repeater (backup)
+    typeMonitor,         //! Passive monitor
+    typeMesh             //! Mesh network
+  };
+
+  enum PowerSaving {
+    powerSavingOn,
+    powerSavingOff,
+    powerSavingUnknown
+  };
+
+  enum Encryption {
+    cryptNone    = 1 << 0,
+    cryptWEP     = 1 << 1,
+    cryptWPA_PSK = 1 << 2,
+    cryptWPA_EAP = 1 << 3,
+    cryptWPA2    = 1 << 4
+  };
+
+  class Network
+  {
+  public:
+    std::string   essid;
+    Type          type;
+    unsigned      bitrate;
+    unsigned long encryption;
+    int           channel;
+    int           quality;
+
+    Network()
+    {
+      Clear();
+    }
+
+    void Clear()
+    {
+      type      = typeNone;
+      bitrate   = 0;
+      encryption= 0;
+      quality   =-1;
+      channel   =-1;
+    }
+  };
+
+
   WlanMaemo();
 
   std::string GetDefaultInterface() const;
-
   bool SupportsNetworkRetrieval() const;
   bool UpdateNetworks();
-
   bool CanChangePowerSaving() const;
   bool SetPowerSaving(bool savePower);
-
   bool HandleMessage(DBusConnection *connection, DBusMessage *msg);
-};
 
-enum Type {
-  typeNone,            //! Not connected
-  typeAuto,            //! Automatic
-  typeAdHoc,           //! Ad hoc network between individual cells
-  typeInfrastructure,  //! Multi cell network
-  typeMaster,          //! Synchronisation mater or AP
-  typeRepeater,        //! Repeater
-  typeSecond,          //! Second master/ repeater (backup)
-  typeMonitor,         //! Passive monitor
-  typeMesh             //! Mesh network
-};
-
-enum PowerSaving {
-  powerSavingOn,
-  powerSavingOff,
-  powerSavingUnknown
-};
-
-enum Encryption {
-  cryptNone    = 1 << 0,
-  cryptWEP     = 1 << 1,
-  cryptWPA_PSK = 1 << 2,
-  cryptWPA_EAP = 1 << 3,
-  cryptWPA2    = 1 << 4
-};
-
-class Network
-{
-public:
-  std::wstring  essid;
-  Type          type;
-  unsigned      bitrate;
-  unsigned long encryption;
-  int           channel;
-  int           quality;
-
-  Network()
-  {
-    Clear();
-  }
-
-  void Clear()
-  {
-    type=typeNone;
-    bitrate=0;
-    encryption=0;
-    quality=-1;
-    channel=-1;
-  }
+  std::string        defaultInterface;
+  std::string        typeName;
+  Type               type;
+  std::string        essid;
+  unsigned           bitrate;
+  int                channel;
+  int                quality; // [0..100%]
+  int                signal;  // dBm
+  int                noise;   // dBm
+  std::string        accesspoint;
+  std::string        ip;
+  std::string        mac;
+  PowerSaving        powerSaving;
+  std::list<Network> networks;
 };
 
 #endif // WLANMAEMO_H

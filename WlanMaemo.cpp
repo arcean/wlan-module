@@ -56,14 +56,26 @@ WlanMaemo::WlanMaemo()
 
 std::string WlanMaemo::GetDefaultInterface() const
 {
+    /* We have only one wlan device */
     return "wlan0";
 }
 
 DBusConnection* WlanMaemo::GetDBusConnection()
 {
-    //TODO
-    //hehe:
-    return NULL;
+    DBusConnection *bus = NULL;
+    DBusError error;
+
+    dbus_error_init(&error);
+
+    std::cout << "Connecting to Session D-Bus" << std::endl;
+
+    bus = dbus_bus_get(DBUS_BUS_SESSION, &error);
+
+    if(bus == NULL) {
+        std::cout << "Failed to open Session bus" << std::endl;
+    }
+
+    return bus;
 }
 
 bool WlanMaemo::HandleMessage(DBusConnection *connection, DBusMessage *msg)
@@ -94,7 +106,7 @@ bool WlanMaemo::HandleMessage(DBusConnection *connection, DBusMessage *msg)
 
 bool WlanMaemo::SupportsNetworkRetrieval() const
 {
-  return true;
+    return true;
 }
 
 bool WlanMaemo::UpdateNetworks()

@@ -80,28 +80,200 @@ DBusConnection* WlanMaemo::GetDBusConnection()
 
 bool WlanMaemo::HandleMessage(DBusConnection *connection, DBusMessage *msg)
 {
-    if (dbus_message_get_type(msg)==DBUS_MESSAGE_TYPE_METHOD_CALL) {
-        DBusMessage *response;
-        std::string appName;
-        std::string error;
+  if (dbus_message_get_type(msg)==DBUS_MESSAGE_TYPE_METHOD_CALL) {
+    DBusMessage *response;
+    std::string appName;
+    std::string error;
 
-        response = dbus_message_new_error(msg,"Message not implemented","Message not implemented");
-        dbus_connection_send(connection,response,NULL);
-        dbus_message_unref(response);
-        return true;
-    }
-    else if (dbus_message_get_type(msg) == DBUS_MESSAGE_TYPE_SIGNAL) {
-        if (strcmp(dbus_message_get_interface(msg),"com.nokia.wlancond.signal")!=0 ||
-            strcmp(dbus_message_get_path(msg),"/com/nokia/wlancond/signal")!=0 ||
-            strcmp(dbus_message_get_member(msg),"scan_results")!=0) {
-                  return false;
-        }
-    }
-    else {
-        return false;
-    }
-
+    response=dbus_message_new_error(msg,"Message not implemented","Message not implemented");
+    dbus_connection_send(connection,response,NULL);
+    dbus_message_unref(response);
     return true;
+  }
+  else if (dbus_message_get_type(msg) == DBUS_MESSAGE_TYPE_SIGNAL) {
+    if (strcmp(dbus_message_get_interface(msg),"com.nokia.wlancond.signal")!=0 ||
+        strcmp(dbus_message_get_path(msg),"/com/nokia/wlancond/signal")!=0 ||
+        strcmp(dbus_message_get_member(msg),"scan_results")!=0) {
+      return false;
+    }
+  }
+  else {
+    return false;
+  }
+
+  std::cout << "Handling network scan result..." << std::endl;
+
+  networks.clear();
+
+  DBusMessageIter iter;
+  int             type;
+  dbus_int32_t    entries;
+  dbus_int32_t    intValue;
+  dbus_uint32_t   uintValue;
+  std::string     strValue;
+
+  dbus_message_iter_init(msg,&iter);
+
+  type=dbus_message_iter_get_arg_type(&iter);
+  if (type!=DBUS_TYPE_INT32) {
+    std::cerr << "Expected number of entries" << std::endl;
+    return true;
+  }
+
+  dbus_message_iter_get_basic(&iter,&entries);
+  dbus_message_iter_next(&iter);
+
+  for (int i=0; i<entries; i++) {
+    Network         network;
+    DBusMessageIter iter2;
+
+    //
+    // ESSID
+    //
+
+    type=dbus_message_iter_get_arg_type(&iter);
+    if (type!=DBUS_TYPE_ARRAY) {
+      std::cerr << "Expected ESSID" << std::endl;
+      return true;
+    }
+
+    dbus_message_iter_recurse(&iter,&iter2);
+    strValue.clear();
+
+    while ((type=dbus_message_iter_get_arg_type(&iter2))!=DBUS_TYPE_INVALID) {
+      std::string tmp;
+
+      if (type!=DBUS_TYPE_BYTE) {
+        std::cerr << "Wrong type for ESSID" << std::endl;
+        return true;
+      }
+
+      char value;
+      dbus_message_iter_get_basic(&iter2,&value);
+
+      strValue.append(1,value);
+
+      dbus_message_iter_next(&iter2);
+    }
+
+    if (strValue.length()>0 && strValue[strValue.length()-1]=='\0') {
+      strValue.erase(strValue.length()-1);
+    }
+
+    /* strValue holds ESSID */
+
+    dbus_message_iter_next(&iter);
+
+
+    type=dbus_message_iter_get_arg_type(&iter);
+    if (type!=DBUS_TYPE_ARRAY) {
+      std::cerr << "Expected BSSID" << std::endl;
+      return true;
+    }
+    dbus_message_iter_next(&iter);
+
+    type=dbus_message_iter_get_arg_type(&iter);
+    if (type!=DBUS_TYPE_INT32) {
+      std::cerr << "Expected RSSI" << std::endl;
+      return true;
+    }
+    dbus_message_iter_get_basic(&iter,&intValue);
+
+    if (noise<0) {
+      std::cerr << "Do not have global noise value, quitting" << std::endl;
+      return true;
+    }
+
+    /* noise =
+       intValue holds necessary data. Needs to be properly calculated (dbm) */
+
+    dbus_message_iter_next(&iter);
+
+    type=dbus_message_iter_get_arg_type(&iter);
+    if (type!=DBUS_TYPE_UINT32) {
+      std::cerr << "Expected CHANNEL" << std::endl;
+      return true;
+    }
+    dbus_message_iter_get_basic(&iter,&uintValue);
+
+    network.channel=uintValue;
+
+    dbus_message_iter_next(&iter);
+
+    type=dbus_message_iter_get_arg_type(&iter);
+    if (type!=DBUS_TYPE_UINT32) {
+      std::cerr << "Expected CAPABILITIES" << std::endl;
+      return true;
+    }
+    dbus_message_iter_get_basic(&iter,&uintValue);
+    if (uintValue & (1 << 0)) {
+      network.type=typeInfrastructure;
+    }
+    else if (uintValue & (1 << 1)) {
+      network.type=typeAdHoc;
+    }
+    else if (uintValue & (1 << 2)) {
+      network.type=typeAuto;
+    }
+
+    /*
+    if (uintValue & (1 << 16)) {
+      std::cout << "Bitrate: 10" << std::endl;
+    }
+    else if (uintValue & (1 << 17)) {
+      std::cout << "Bitrate: 20" << std::endl;
+    }
+    else if (uintValue & (1 << 18)) {
+      std::cout << "Bitrate: 55" << std::endl;
+    }
+    else if (uintValue & (1 << 19)) {
+      std::cout << "Bitrate: 60" << std::endl;
+    }
+    else if (uintValue & (1 << 20)) {
+      std::cout << "Bitrate: 90" << std::endl;
+    }
+    else if (uintValue & (1 << 21)) {
+      std::cout << "Bitrate: 110" << std::endl;
+    }
+    else if (uintValue & (1 << 22)) {
+      std::cout << "Bitrate: 120" << std::endl;
+    }
+    else if (uintValue & (1 << 23)) {
+      std::cout << "Bitrate: 180" << std::endl;
+    }
+    else if (uintValue & (1 << 24)) {
+      std::cout << "Bitrate: 260" << std::endl;
+    }
+    else if (uintValue & (1 << 25)) {
+      std::cout << "Bitrate: 540" << std::endl;
+    }*/
+
+    dbus_message_iter_next(&iter);
+
+    network.encryption=0;
+
+    if (uintValue & (1<<4)) {
+      network.encryption|=cryptNone;
+    }
+    if (uintValue & (1<<5)) {
+      network.encryption|=cryptWEP;
+    }
+    if (uintValue & (1<<6)) {
+      network.encryption|=cryptWPA_PSK;
+    }
+    if (uintValue & (1<<7)) {
+      network.encryption|=cryptWPA_EAP;
+    }
+    if (uintValue & (1<<8)) {
+      network.encryption|=cryptWPA2;
+    }
+
+    if (!network.essid.empty()) {
+      networks.push_back(network);
+    }
+  }
+
+  return true;
 }
 
 bool WlanMaemo::SupportsNetworkRetrieval() const

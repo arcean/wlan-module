@@ -73,11 +73,11 @@ public:
 
     void Clear()
     {
-      type      = typeNone;
-      bitrate   = 0;
-      encryption= 0;
-      quality   =-1;
-      channel   =-1;
+      type      =  typeNone;
+      bitrate   =  0;
+      encryption=  0;
+      quality   = -1;
+      channel   = -1;
     }
   };
 

@@ -22,7 +22,7 @@
 
 DBusHandlerResult DBusMsgHandler(DBusConnection *connection, DBusMessage *msg, void *data)
 {
-  WlanMaemo *statusHildon=static_cast<WlanMaemo*>(data);
+  WlanMaemo *statusHildon = static_cast<WlanMaemo*>(data);
 
   statusHildon->HandleMessage(connection,msg);
 
@@ -33,11 +33,11 @@ void callback(DBusPendingCall* call, void* /*data*/)
 {
   DBusMessage *reply;
 
-  reply=dbus_pending_call_steal_reply(call);
+  reply = dbus_pending_call_steal_reply(call);
 
   std::cout << "Call finished with reply of type " << dbus_message_type_to_string(dbus_message_get_type(reply)) << std::endl;
 
-  if (dbus_message_get_type(reply)==DBUS_MESSAGE_TYPE_ERROR) {
+  if (dbus_message_get_type(reply) == DBUS_MESSAGE_TYPE_ERROR) {
     std::cout << "Error: " << dbus_message_get_error_name(reply) << std::endl;
   }
 
@@ -46,12 +46,12 @@ void callback(DBusPendingCall* call, void* /*data*/)
 
 WlanMaemo::WlanMaemo()
 {
-  if (GetDBusConnection()==NULL) {
+  if (GetDBusConnection() == NULL) {
     std::cerr << "No DBus connection!" << std::endl;
     return;
   }
 
-  dbus_connection_add_filter(GetDBusConnection(),DBusMsgHandler,this,NULL);
+  dbus_connection_add_filter(GetDBusConnection(), DBusMsgHandler, this, NULL);
 }
 
 std::string WlanMaemo::GetDefaultInterface() const
@@ -80,20 +80,20 @@ DBusConnection* WlanMaemo::GetDBusConnection()
 
 bool WlanMaemo::HandleMessage(DBusConnection *connection, DBusMessage *msg)
 {
-  if (dbus_message_get_type(msg)==DBUS_MESSAGE_TYPE_METHOD_CALL) {
+  if (dbus_message_get_type(msg) == DBUS_MESSAGE_TYPE_METHOD_CALL) {
     DBusMessage *response;
     std::string appName;
     std::string error;
 
-    response=dbus_message_new_error(msg,"Message not implemented","Message not implemented");
-    dbus_connection_send(connection,response,NULL);
+    response = dbus_message_new_error(msg, "Message not implemented","Message not implemented");
+    dbus_connection_send(connection, response, NULL);
     dbus_message_unref(response);
     return true;
   }
   else if (dbus_message_get_type(msg) == DBUS_MESSAGE_TYPE_SIGNAL) {
-    if (strcmp(dbus_message_get_interface(msg),"com.nokia.wlancond.signal")!=0 ||
-        strcmp(dbus_message_get_path(msg),"/com/nokia/wlancond/signal")!=0 ||
-        strcmp(dbus_message_get_member(msg),"scan_results")!=0) {
+    if (strcmp(dbus_message_get_interface(msg), "com.nokia.wlancond.signal") != 0 ||
+        strcmp(dbus_message_get_path(msg), "/com/nokia/wlancond/signal") != 0 ||
+        strcmp(dbus_message_get_member(msg), "scan_results") != 0) {
       return false;
     }
   }
@@ -112,18 +112,18 @@ bool WlanMaemo::HandleMessage(DBusConnection *connection, DBusMessage *msg)
   dbus_uint32_t   uintValue;
   std::string     strValue;
 
-  dbus_message_iter_init(msg,&iter);
+  dbus_message_iter_init(msg, &iter);
 
-  type=dbus_message_iter_get_arg_type(&iter);
-  if (type!=DBUS_TYPE_INT32) {
+  type = dbus_message_iter_get_arg_type(&iter);
+  if (type != DBUS_TYPE_INT32) {
     std::cerr << "Expected number of entries" << std::endl;
     return true;
   }
 
-  dbus_message_iter_get_basic(&iter,&entries);
+  dbus_message_iter_get_basic(&iter, &entries);
   dbus_message_iter_next(&iter);
 
-  for (int i=0; i<entries; i++) {
+  for (int i = 0; i<entries; i++) {
     Network         network;
     DBusMessageIter iter2;
 
@@ -131,32 +131,32 @@ bool WlanMaemo::HandleMessage(DBusConnection *connection, DBusMessage *msg)
     // ESSID
     //
 
-    type=dbus_message_iter_get_arg_type(&iter);
-    if (type!=DBUS_TYPE_ARRAY) {
+    type = dbus_message_iter_get_arg_type(&iter);
+    if (type != DBUS_TYPE_ARRAY) {
       std::cerr << "Expected ESSID" << std::endl;
       return true;
     }
 
-    dbus_message_iter_recurse(&iter,&iter2);
+    dbus_message_iter_recurse(&iter, &iter2);
     strValue.clear();
 
-    while ((type=dbus_message_iter_get_arg_type(&iter2))!=DBUS_TYPE_INVALID) {
+    while ((type = dbus_message_iter_get_arg_type(&iter2)) != DBUS_TYPE_INVALID) {
       std::string tmp;
 
-      if (type!=DBUS_TYPE_BYTE) {
+      if (type != DBUS_TYPE_BYTE) {
         std::cerr << "Wrong type for ESSID" << std::endl;
         return true;
       }
 
       char value;
-      dbus_message_iter_get_basic(&iter2,&value);
+      dbus_message_iter_get_basic(&iter2, &value);
 
-      strValue.append(1,value);
+      strValue.append(1, value);
 
       dbus_message_iter_next(&iter2);
     }
 
-    if (strValue.length()>0 && strValue[strValue.length()-1]=='\0') {
+    if (strValue.length() > 0 && strValue[strValue.length()-1] == '\0') {
       strValue.erase(strValue.length()-1);
     }
 
@@ -165,55 +165,61 @@ bool WlanMaemo::HandleMessage(DBusConnection *connection, DBusMessage *msg)
     dbus_message_iter_next(&iter);
 
 
-    type=dbus_message_iter_get_arg_type(&iter);
-    if (type!=DBUS_TYPE_ARRAY) {
+    type = dbus_message_iter_get_arg_type(&iter);
+    if (type != DBUS_TYPE_ARRAY) {
       std::cerr << "Expected BSSID" << std::endl;
       return true;
     }
     dbus_message_iter_next(&iter);
 
-    type=dbus_message_iter_get_arg_type(&iter);
-    if (type!=DBUS_TYPE_INT32) {
+    type = dbus_message_iter_get_arg_type(&iter);
+    if (type != DBUS_TYPE_INT32) {
       std::cerr << "Expected RSSI" << std::endl;
       return true;
     }
-    dbus_message_iter_get_basic(&iter,&intValue);
+    dbus_message_iter_get_basic(&iter, &intValue);
 
-    if (noise<0) {
+    if (noise < 0) {
       std::cerr << "Do not have global noise value, quitting" << std::endl;
       return true;
     }
 
-    /* noise =
-       intValue holds necessary data. Needs to be properly calculated (dbm) */
+    if (noise == 0)  {
+        /* network.quality = */
+        /* need to calculate */
+    }
+    else {
+        /* network.quality = */
+        /* need to calculate, noise-0x100 ? */
+    }
 
     dbus_message_iter_next(&iter);
 
-    type=dbus_message_iter_get_arg_type(&iter);
-    if (type!=DBUS_TYPE_UINT32) {
+    type = dbus_message_iter_get_arg_type(&iter);
+    if (type != DBUS_TYPE_UINT32) {
       std::cerr << "Expected CHANNEL" << std::endl;
       return true;
     }
-    dbus_message_iter_get_basic(&iter,&uintValue);
+    dbus_message_iter_get_basic(&iter, &uintValue);
 
-    network.channel=uintValue;
+    network.channel = uintValue;
 
     dbus_message_iter_next(&iter);
 
-    type=dbus_message_iter_get_arg_type(&iter);
-    if (type!=DBUS_TYPE_UINT32) {
+    type = dbus_message_iter_get_arg_type(&iter);
+    if (type != DBUS_TYPE_UINT32) {
       std::cerr << "Expected CAPABILITIES" << std::endl;
       return true;
     }
-    dbus_message_iter_get_basic(&iter,&uintValue);
+    dbus_message_iter_get_basic(&iter, &uintValue);
     if (uintValue & (1 << 0)) {
-      network.type=typeInfrastructure;
+      network.type = typeInfrastructure;
     }
     else if (uintValue & (1 << 1)) {
-      network.type=typeAdHoc;
+      network.type = typeAdHoc;
     }
     else if (uintValue & (1 << 2)) {
-      network.type=typeAuto;
+      network.type = typeAuto;
     }
 
     /*
@@ -250,22 +256,22 @@ bool WlanMaemo::HandleMessage(DBusConnection *connection, DBusMessage *msg)
 
     dbus_message_iter_next(&iter);
 
-    network.encryption=0;
+    network.encryption = 0;
 
     if (uintValue & (1<<4)) {
-      network.encryption|=cryptNone;
+      network.encryption |= cryptNone;
     }
     if (uintValue & (1<<5)) {
-      network.encryption|=cryptWEP;
+      network.encryption |= cryptWEP;
     }
     if (uintValue & (1<<6)) {
-      network.encryption|=cryptWPA_PSK;
+      network.encryption |= cryptWPA_PSK;
     }
     if (uintValue & (1<<7)) {
-      network.encryption|=cryptWPA_EAP;
+      network.encryption |= cryptWPA_EAP;
     }
     if (uintValue & (1<<8)) {
-      network.encryption|=cryptWPA2;
+      network.encryption |= cryptWPA2;
     }
 
     if (!network.essid.empty()) {
@@ -285,14 +291,14 @@ bool WlanMaemo::UpdateNetworks()
 {
   DBusMessage     *msg;
   DBusPendingCall *call;
-  dbus_int32_t    power=4;
-  dbus_int32_t    flags=2;
+  dbus_int32_t    power = 4;
+  dbus_int32_t    flags = 2;
   unsigned char   a[] = { 0 };
-  unsigned char*  ap=a;
+  unsigned char*  ap = a;
 
   std::cout << "Requesting network scan..." << std::endl;
 
-  if (GetDBusConnection()==NULL) {
+  if (GetDBusConnection() == NULL) {
     std::cerr << "No DBus connection!" << std::endl;
     return false;
   }
@@ -303,17 +309,17 @@ bool WlanMaemo::UpdateNetworks()
                                    "scan");
 
   dbus_message_append_args(msg,
-                           DBUS_TYPE_INT32,&power,
-                           DBUS_TYPE_ARRAY,DBUS_TYPE_BYTE,&ap,0,
-                           DBUS_TYPE_UINT32,&flags,
+                           DBUS_TYPE_INT32, &power,
+                           DBUS_TYPE_ARRAY, DBUS_TYPE_BYTE, &ap,0,
+                           DBUS_TYPE_UINT32, &flags,
                            DBUS_TYPE_INVALID);
 
-  if (!dbus_connection_send_with_reply(GetDBusConnection(),msg,&call,-1)) {
+  if (!dbus_connection_send_with_reply(GetDBusConnection(), msg, &call,-1)) {
     std::cout << "Cannot send with reply" << std::endl;
     return false;
   }
 
-  dbus_pending_call_set_notify(call,callback,NULL,NULL);
+  dbus_pending_call_set_notify(call, callback, NULL, NULL);
 
   std::cout << "Requesting network scan done." << std::endl;
 
@@ -336,7 +342,7 @@ bool WlanMaemo::SetPowerSaving(bool savePower)
     dbus_bool_t     powerModeActivated = savePower ? TRUE : FALSE;
     bool            result;
 
-    if (GetDBusConnection()==NULL) {
+    if (GetDBusConnection() == NULL) {
         std::cerr << "No DBus connection!" << std::endl;
         return false;
     }
@@ -347,12 +353,12 @@ bool WlanMaemo::SetPowerSaving(bool savePower)
                                      "set_powersave");
 
     dbus_message_append_args(msg,
-                             DBUS_TYPE_BOOLEAN,&powerModeActivated,
+                             DBUS_TYPE_BOOLEAN, &powerModeActivated,
                              DBUS_TYPE_INVALID);
 
-    result=dbus_connection_send_with_reply(GetDBusConnection(),msg,&call,-1);
+    result=dbus_connection_send_with_reply(GetDBusConnection(), msg, &call, -1);
 
-    dbus_pending_call_set_notify(call,callback,NULL,NULL);
+    dbus_pending_call_set_notify(call, callback, NULL, NULL);
 
     dbus_message_unref(msg);
 

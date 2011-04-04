@@ -149,3 +149,40 @@ bool WlanMaemo::UpdateNetworks()
 
   return true;
 }
+
+bool WlanMaemo::CanChangePowerSaving() const
+{
+    return true;
+}
+
+bool WlanMaemo::SetPowerSaving(bool savePower)
+{
+    std::cout << "Requesting power saving switch... " << savePower << std::endl;
+
+    DBusMessage     *msg;
+    DBusPendingCall *call;
+    dbus_bool_t     powerModeActivated = savePower ? TRUE : FALSE;
+    bool            result;
+
+    if (GetDBusConnection()==NULL) {
+        std::cerr << "No DBus connection!" << std::endl;
+        return false;
+    }
+
+    msg=dbus_message_new_method_call("com.nokia.wlancond",
+                                     "/com/nokia/wlancond/request",
+                                     "com.nokia.wlancond.request",
+                                     "set_powersave");
+
+    dbus_message_append_args(msg,
+                             DBUS_TYPE_BOOLEAN,&powerModeActivated,
+                             DBUS_TYPE_INVALID);
+
+    result=dbus_connection_send_with_reply(GetDBusConnection(),msg,&call,-1);
+
+    dbus_pending_call_set_notify(call,callback,NULL,NULL);
+
+    dbus_message_unref(msg);
+
+    return result;
+}

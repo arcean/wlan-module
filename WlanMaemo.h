@@ -90,6 +90,7 @@ public:
   bool CanChangePowerSaving() const;
   bool SetPowerSaving(bool savePower);
   bool HandleMessage(DBusConnection *connection, DBusMessage *msg);
+	int GetQualityFromSignalNoiseDbm(int signal, int noise);
 
   std::string        defaultInterface;
   std::string        typeName;
@@ -97,7 +98,7 @@ public:
   std::string        essid;
   unsigned           bitrate;
   int                channel;
-  int                quality; // [0..100%]
+  int                quality; // [0..100%] ([101..201%] - saved records)
   int                signal;  // dBm
   int                noise;   // dBm
   std::string        accesspoint;

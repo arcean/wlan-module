@@ -60,6 +60,21 @@ std::string WlanMaemo::GetDefaultInterface() const
     return "wlan0";
 }
 
+int WlanMaemo::GetQualityFromSignalNoiseDbm(int signal, int noise)
+{
+  int quality = signal - noise;
+
+  if (quality < 0) {
+    return 0;
+  }
+  if (quality >= 0 && quality < 40) {
+    return 5 * quality / 2;
+  }
+  else {
+    return 100;
+  }
+}
+
 DBusConnection* WlanMaemo::GetDBusConnection()
 {
     DBusConnection *bus = NULL;
@@ -185,12 +200,10 @@ bool WlanMaemo::HandleMessage(DBusConnection *connection, DBusMessage *msg)
     }
 
     if (noise == 0)  {
-        /* network.quality = */
-        /* need to calculate */
+      network.quality = GetQualityFromSignalNoiseDbm(intValue, -95);
     }
     else {
-        /* network.quality = */
-        /* need to calculate, noise-0x100 ? */
+      network.quality = GetQualityFromSignalNoiseDbm(intValue, noise - 0x100);
     }
 
     dbus_message_iter_next(&iter);
